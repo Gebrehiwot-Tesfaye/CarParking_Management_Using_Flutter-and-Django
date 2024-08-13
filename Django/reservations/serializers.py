@@ -73,14 +73,14 @@ class ReservationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reservation
-        fields = ['car', 'start_time', 'end_time']
+        fields = ['car','car_slot', 'start_time', 'end_time']
 
 class SimpleReservationSerializer(serializers.ModelSerializer):
     car_id = serializers.PrimaryKeyRelatedField(queryset=Car.objects.all(), source='car')
 
     class Meta:
         model = Reservation
-        fields = ['start_time', 'end_time', 'car_id']
+        fields = ['start_time','car_slot', 'end_time', 'car_id']
 
     def create(self, validated_data):
         car = validated_data.pop('car')

@@ -32,11 +32,12 @@ class Car(models.Model):
 
 class Reservation(models.Model):
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
+    car_slot = models.CharField(max_length=100, unique=True)  # New field for car slot
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
 
     def __str__(self):
-        return f'Reservation for {self.car.model} from {self.start_time} to {self.end_time}'
+        return f'Reservation for {self.car.model} in slot {self.car_slot} from {self.start_time} to {self.end_time}'
 
 class AdminApproval(models.Model):
     reservation = models.ForeignKey(Reservation, on_delete=models.CASCADE)
