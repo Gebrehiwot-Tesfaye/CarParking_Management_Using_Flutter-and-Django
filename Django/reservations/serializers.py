@@ -3,6 +3,7 @@ from .models import UserProfile, Car, Reservation, AdminApproval
 from user.models import User
 
 # User Serializer
+# User Serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -28,6 +29,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['user', 'profile_image']
 
+    def to_representation(self, instance):
+        # For GET requests, return detailed user information
+        request = self.context.get('request')
+        if request and request.method == 'GET':
+            self.fields['user'] = UserSerializer(read_only=True)
+        return super().to_representation(instance)
+
     def create(self, validated_data):
         user = validated_data.get('user')
         profile_image = validated_data.get('profile_image')
@@ -40,11 +48,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return user_profile
 # Car Serializer
 class CarSerializer(serializers.ModelSerializer):
-    user = UserProfileSerializer()  # Nested for GET requests
+    user = UserProfileSerializer()  # Nested serializer to include the user details
 
     class Meta:
         model = Car
-        fields = ['user', 'model', 'vin']
+        fields = ('id', 'user', 'model', 'vin')
 
 class SimpleCarSerializer(serializers.ModelSerializer):
     user_profile_id = serializers.PrimaryKeyRelatedField(queryset=UserProfile.objects.all(), source='user')
