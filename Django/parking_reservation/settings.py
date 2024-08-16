@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders' ,
     
+    
 ]
 AUTH_USER_MODEL = 'user.User'
 MIDDLEWARE = [

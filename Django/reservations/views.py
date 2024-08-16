@@ -1,4 +1,5 @@
 from rest_framework import generics
+from rest_framework.exceptions import NotFound
 from .models import UserProfile, Car, Reservation, AdminApproval
 from .serializers import (
     UserProfileSerializer, CarSerializer, ReservationSerializer, AdminApprovalSerializer,
@@ -16,12 +17,22 @@ class UserProfileListCreateView(generics.ListCreateAPIView):
 
 # UserProfile RetrieveUpdateDestroyView for GET, PUT, PATCH, DELETE
 class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        user_id = self.kwargs.get('user_id')
+        try:
+            return UserProfile.objects.get(user__id=user_id)
+        except UserProfile.DoesNotExist:
+            raise NotFound("UserProfile not found")
 
 # Car ListCreateView for POST and GET
 class CarListCreateView(generics.ListCreateAPIView):
-    queryset = Car.objects.all()
+    serializer_class = CarSerializer
+
+    def get_queryset(self):
+        user_id = self.kwargs.get('user_id')
+        return Car.objects.filter(user__id=user_id)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -36,7 +47,6 @@ class CarDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return CarSerializer
         return SimpleCarSerializer
-
 # Reservation ListCreateView for POST and GET
 class ReservationListCreateView(generics.ListCreateAPIView):
     queryset = Reservation.objects.all()

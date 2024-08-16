@@ -27,7 +27,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['user', 'profile_image']
+        fields = ['id','user', 'profile_image']
 
     def to_representation(self, instance):
         # For GET requests, return detailed user information
@@ -48,28 +48,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return user_profile
 # Car Serializer
 class CarSerializer(serializers.ModelSerializer):
-    user = UserProfileSerializer()  # Nested serializer to include the user details
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Relating to the User model
 
     class Meta:
         model = Car
         fields = ('id', 'user', 'model', 'vin')
 
 class SimpleCarSerializer(serializers.ModelSerializer):
-    user_profile_id = serializers.PrimaryKeyRelatedField(queryset=UserProfile.objects.all(), source='user')
+    user_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), source='user')
 
     class Meta:
         model = Car
-        fields = ['id', 'model', 'vin', 'user_profile_id']
+        fields = ['id', 'model', 'vin', 'user_id']
 
     def create(self, validated_data):
-        user_profile = validated_data.pop('user')
-        car = Car.objects.create(user=user_profile, **validated_data)
+        user = validated_data.pop('user')
+        car = Car.objects.create(user=user, **validated_data)
         return car
 
     def update(self, instance, validated_data):
-        user_profile = validated_data.pop('user', None)
-        if user_profile is not None:
-            instance.user = user_profile
+        user = validated_data.pop('user', None)
+        if user is not None:
+            instance.user = user
         instance.model = validated_data.get('model', instance.model)
         instance.vin = validated_data.get('vin', instance.vin)
         instance.save()
