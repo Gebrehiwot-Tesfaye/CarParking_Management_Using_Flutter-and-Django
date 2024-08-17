@@ -12,7 +12,7 @@ class CarAdmin(admin.ModelAdmin):
     search_fields = ('model', 'vin', 'user__username')
 
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = ('car', 'start_time', 'end_time')
+    list_display = ('car','car_slot', 'start_time', 'end_time','is_approved')
     search_fields = ('car__model', 'car__vin', 'start_time', 'end_time')
 
 class AdminApprovalAdmin(admin.ModelAdmin):

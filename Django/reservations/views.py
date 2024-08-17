@@ -1,4 +1,8 @@
+from urllib import response
 from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
 from .models import UserProfile, Car, Reservation, AdminApproval
 from .serializers import (
@@ -64,6 +68,18 @@ class ReservationDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'GET':
             return ReservationSerializer
         return SimpleReservationSerializer
+    
+class CheckApprovalView(APIView):
+    def get(self, request, slot_name):
+        try:
+            reservation = Reservation.objects.get(car_slot=slot_name)
+            return Response({
+                'is_approved': reservation.is_approved,
+                'start_time': reservation.start_time,
+                'end_time': reservation.end_time,
+            })
+        except Reservation.DoesNotExist:
+            return Response({'error': 'Reservation not found'}, status=status.HTTP_404_NOT_FOUND)
 
 # AdminApproval ListCreateView for POST and GET
 class AdminApprovalListCreateView(generics.ListCreateAPIView):

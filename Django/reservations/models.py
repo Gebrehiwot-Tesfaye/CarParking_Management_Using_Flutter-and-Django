@@ -31,10 +31,10 @@ class Car(models.Model):
         return f'{self.model} ({self.vin}) - Owned by {self.user.username}'
 class Reservation(models.Model):
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
-    car_slot = models.CharField(max_length=100, unique=True)  # New field for car slot
+    car_slot = models.CharField(max_length=100,unique=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    # is_approved=models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)  # Added field
 
     def __str__(self):
         return f'Reservation for {self.car.model} in slot {self.car_slot} from {self.start_time} to {self.end_time}'

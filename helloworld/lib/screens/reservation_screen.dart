@@ -71,8 +71,14 @@ class _ReservationScreenState extends State<ReservationScreen> {
       );
 
       if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Reservation successful')));
+        // Show a SnackBar with a green background to indicate success
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Reservation successful'),
+            backgroundColor: Colors.green, // Set the background color to green
+          ),
+        );
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -82,8 +88,15 @@ class _ReservationScreenState extends State<ReservationScreen> {
       } else {
         print('Failed to make reservation');
         print(response.body);
+
+        // Show a SnackBar with a red background to indicate failure
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to make reservation car_slot":["reservation with this car slot already exists.')));
+          SnackBar(
+            content: Text(
+                'Failed to make reservation. A reservation with this car slot already exists.'),
+            backgroundColor: Colors.red, // Set the background color to red
+          ),
+        );
       }
     } catch (e) {
       print('Error making reservation: $e');
@@ -131,6 +144,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       contentPadding: EdgeInsets.symmetric(
                           vertical: 16.0, horizontal: 12.0),
                     ),
+                    hint: Text('Select a car or please add it at you profile'),
                     value: _selectedCar,
                     items: carList.map((Map<String, dynamic> car) {
                       return DropdownMenuItem<Map<String, dynamic>>(

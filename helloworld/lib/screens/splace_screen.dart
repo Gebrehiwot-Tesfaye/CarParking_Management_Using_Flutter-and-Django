@@ -50,7 +50,7 @@ class SplaceScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "CAR PARKING",
+                        "ASHEWA CAR PARKING",
                         style: TextStyle(
                           fontSize: 25,
                           fontWeight: FontWeight.w600,
@@ -84,7 +84,7 @@ class SplaceScreen extends StatelessWidget {
                 children: [
                   Image.asset(
                     collegeLogo,
-                    width: 120,
+                    width: 1,
                   ),
                   GestureDetector(
                     onTap: () {

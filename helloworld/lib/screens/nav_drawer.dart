@@ -15,7 +15,7 @@ class NavDrawer extends StatelessWidget {
             child: Row(
               children: [
                 Image.asset(
-                  'assets/images/logo.png', // Replace with your actual logo path
+                  'assets/images/logo.png', // logo path
                   width: 50,
                   height: 50,
                 ),

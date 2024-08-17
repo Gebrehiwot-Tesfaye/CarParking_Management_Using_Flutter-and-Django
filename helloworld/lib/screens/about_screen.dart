@@ -119,13 +119,17 @@ class _AboutScreenState extends State<AboutScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Changes saved successfully')),
+          SnackBar(content: Text('Changes saved successfully')
+          ,backgroundColor: Colors.green),
         );
       } else {
         print('Failed to save changes: ${response.statusCode}');
         print('Response: $responseString');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save changes')),
+          SnackBar(content: Text('Failed to save changes'),
+          backgroundColor: Colors.red,
+          
+          ),
         );
       }
     } catch (e) {
@@ -258,88 +262,118 @@ class _AboutScreenState extends State<AboutScreen> {
         title: const Text("User Profile"),
         backgroundColor: Colors.blueAccent,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Image Uploader
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: _profileImage != null
-                        ? FileImage(_profileImage!)
-                        : _userProfile?['profile_image'] != null
-                            ? NetworkImage(_userProfile!['profile_image'])
-                            : null,
-                    child: _profileImage == null &&
-                            _userProfile?['profile_image'] == null
-                        ? const Icon(Icons.person, size: 60)
-                        : null,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Profile Image Uploader
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: _profileImage != null
+                          ? FileImage(_profileImage!)
+                          : _userProfile?['profile_image'] != null
+                              ? NetworkImage(_userProfile!['profile_image'])
+                              : null,
+                      child: _profileImage == null &&
+                              _userProfile?['profile_image'] == null
+                          ? const Icon(Icons.person, size: 60)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: _pickImage,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 10),
+              TextFormField(
+                controller: _usernameController,
+                decoration: InputDecoration(labelText: 'Username'),
+              ),
+              SizedBox(height: 6),
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(labelText: 'Email'),
+              ),
+              SizedBox(height: 6),
+              TextFormField(
+                controller: _phoneNumberController,
+                decoration: InputDecoration(labelText: 'Phone Number'),
+              ),
+              SizedBox(height: 6),
+              TextFormField(
+                controller: _firstNameController,
+                decoration: InputDecoration(labelText: 'First Name'),
+              ),
+              SizedBox(height: 6),
+              TextFormField(
+                controller: _lastNameController,
+                decoration: InputDecoration(labelText: 'Last Name'),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: _saveChanges,
+                child: const Text('Save Changes'),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blueAccent,
+                ),
+              ),
+              SizedBox(height: 10),
+              Center(
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.blueAccent, // Border color
+                      width: 2.0, // Border width
+                      style: BorderStyle
+                          .solid, // Solid border (use dashed if needed)
+                    ),
+                    borderRadius: BorderRadius.circular(8.0), // Rounded corners
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: _pickImage,
+                  child: ElevatedButton(
+                    onPressed: _showAddCarDialog,
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.blueAccent,
+                      backgroundColor: Colors.white, // Text color
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 20.0, vertical: 10.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, color: Colors.blueAccent), // Plus icon
+                        SizedBox(width: 8.0), // Space between icon and text
+                        Text('Add your car here'), // Button text
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-            SizedBox(height: 20),
-            TextFormField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: _emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: _phoneNumberController,
-              decoration: InputDecoration(labelText: 'Phone Number'),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: _firstNameController,
-              decoration: InputDecoration(labelText: 'First Name'),
-            ),
-            SizedBox(height: 10),
-            TextFormField(
-              controller: _lastNameController,
-              decoration: InputDecoration(labelText: 'Last Name'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveChanges,
-              child: const Text('Save Changes'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _showAddCarDialog,
-              child: const Text('Add Car'),
-            ),
-            SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _userCars.length,
-                itemBuilder: (context, index) {
-                  final car = _userCars[index];
-                  return ListTile(
+
+              SizedBox(height: 10),
+              // Display list of cars
+              ..._userCars.map((car) => ListTile(
                     title: Text(car['model']),
                     subtitle: Text('VIN: ${car['vin']}'),
-                  );
-                },
-              ),
-            ),
-          ],
+                  )),
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    UserProfileListCreateView, UserProfileDetailView,
+    CheckApprovalView, UserProfileListCreateView, UserProfileDetailView,
     CarListCreateView, CarDetailView,
     ReservationListCreateView, ReservationDetailView,
     AdminApprovalListCreateView, AdminApprovalDetailView
@@ -13,8 +13,14 @@ urlpatterns = [
 
     # URL for retrieving, updating, or deleting a specific car
     path('cars/<int:pk>/', CarDetailView.as_view(), name='car-detail'),
-    path('reservations/', ReservationListCreateView.as_view(), name='reservation-list-create'),
+    
+     path('reservations/', ReservationListCreateView.as_view(), name='reservation-list-create'),
+     
     path('reservations/<int:pk>/', ReservationDetailView.as_view(), name='reservation-detail'),
+    
     path('admin-approvals/', AdminApprovalListCreateView.as_view(), name='adminapproval-list-create'),
+    
     path('admin-approvals/<int:pk>/', AdminApprovalDetailView.as_view(), name='adminapproval-detail'),
+    path('reservations/check_approval/<str:slot_name>/', CheckApprovalView.as_view(), name='check-approval'),
+
 ]

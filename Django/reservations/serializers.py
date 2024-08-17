@@ -75,20 +75,19 @@ class SimpleCarSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-# Reservation Serializer
 class ReservationSerializer(serializers.ModelSerializer):
-    car = CarSerializer()  # Nested for GET requests
+    car = CarSerializer()
 
     class Meta:
         model = Reservation
-        fields = ['car','car_slot', 'start_time', 'end_time']
+        fields = ['car', 'car_slot', 'start_time', 'end_time', 'is_approved']  # Include is_approved
 
 class SimpleReservationSerializer(serializers.ModelSerializer):
     car_id = serializers.PrimaryKeyRelatedField(queryset=Car.objects.all(), source='car')
 
     class Meta:
         model = Reservation
-        fields = ['start_time','car_slot', 'end_time', 'car_id']
+        fields = ['start_time', 'car_slot', 'end_time', 'car_id', 'is_approved']  # Include is_approved
 
     def create(self, validated_data):
         car = validated_data.pop('car')
@@ -101,8 +100,10 @@ class SimpleReservationSerializer(serializers.ModelSerializer):
             instance.car = car
         instance.start_time = validated_data.get('start_time', instance.start_time)
         instance.end_time = validated_data.get('end_time', instance.end_time)
+        instance.is_approved = validated_data.get('is_approved', instance.is_approved)
         instance.save()
         return instance
+
 
 # AdminApproval Serializer
 class AdminApprovalSerializer(serializers.ModelSerializer):
