@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
-// import 'package:flutter/rendering.dart';
 import 'package:helloworld/screens/register_screen.dart';
 import 'package:helloworld/screens/login_screen.dart';
 import 'package:helloworld/screens/car_registration_screen.dart';
 import 'package:helloworld/screens/reservation_screen.dart';
 import 'package:helloworld/screens/splace_screen.dart';
-// import 'package:helloworld/widgets/custom_button.dart';
-// import 'package:helloworld/widgets/custom_text_field.dart';
+import 'package:helloworld/providers/user_auth.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserAuth()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

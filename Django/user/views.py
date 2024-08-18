@@ -144,6 +144,8 @@ class ApproveView(APIView):
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 User = get_user_model()
 
+
+from rest_framework_simplejwt.tokens import RefreshToken
 class LoginView(APIView):
     def get(self, request, *args, **kwargs):
         return Response({"detail": "Please provide username and password to log in."}, status=status.HTTP_200_OK)
@@ -163,8 +165,21 @@ class LoginView(APIView):
 
         # Log the user in
         login(request, user)
-        return Response({"detail": "Login successful.",
-                         "username": user.username}, status=status.HTTP_200_OK)
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        return Response({
+                "detail": "Login successful.",
+             "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+                "access_token": access_token,
+                "refresh_token": str(refresh)
+            }, status=status.HTTP_200_OK)
 
     def delete(self, request, *args, **kwargs):
         logout(request)

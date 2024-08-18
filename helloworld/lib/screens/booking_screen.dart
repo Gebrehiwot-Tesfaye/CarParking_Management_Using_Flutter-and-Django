@@ -1,13 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:another_dashed_container/another_dashed_container.dart';
+import 'package:helloworld/screens/login_screen.dart';
 import 'package:helloworld/screens/reservation_screen.dart'; // Import your ReservationScreen
 import 'package:helloworld/screens/about_screen.dart'; // Import the AboutScreen
+import 'package:shared_preferences/shared_preferences.dart';
 
-class CarSlotBookingPage extends StatelessWidget {
-  final List<String> basement1SlotNames = ["B1A0", "B1B0", "B1C0", "B1D0"];
-  final List<String> basement2SlotNames = ["B2A1", "B2B1", "B2C1", "B2D1"];
+class CarSlotBookingPage extends StatefulWidget {
+  @override
+  _CarSlotBookingPageState createState() => _CarSlotBookingPageState();
+}
 
-  CarSlotBookingPage({super.key});
+class _CarSlotBookingPageState extends State<CarSlotBookingPage> {
+  int? _userId; // Field to hold userId
+
+  Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+    await prefs.remove('access_token');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Successfully logged out'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoginScreen(), // Navigate to LoginScreen
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId(); // Load userId from SharedPreferences
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userId =
+          prefs.getInt('user_id'); // Retrieve userId from SharedPreferences
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +57,32 @@ class CarSlotBookingPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.account_circle, size: 30),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      AboutScreen(userId:2), // Navigates to AboutScreen
-                ),
-              );
+              if (_userId != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AboutScreen(userId: _userId!), // Pass dynamic userId
+                  ),
+                );
+              } else {
+                // Handle case where userId is not available
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('User not logged in'),
+                  ),
+                );
+              }
+            },
+          ),
+           IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await logout(context);
             },
           ),
         ],
+         
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -91,6 +145,9 @@ class CarSlotBookingPage extends StatelessWidget {
       ),
     );
   }
+
+  final List<String> basement1SlotNames = ["B1A0", "B1B0", "B1C0", "B1D0"];
+  final List<String> basement2SlotNames = ["B2A1", "B2B1", "B2C1", "B2D1"];
 }
 
 class ParkingSlot extends StatelessWidget {
@@ -100,7 +157,7 @@ class ParkingSlot extends StatelessWidget {
     super.key,
     required this.slotName,
   });
-
+  
   @override
   Widget build(BuildContext context) {
     return DashedContainer(

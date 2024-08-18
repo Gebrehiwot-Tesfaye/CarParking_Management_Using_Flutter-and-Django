@@ -39,6 +39,10 @@ dependencies:
   lottie: ^3.0.0
   another_dashed_container: ^1.0.0
   image_picker: ^1.1.2
+  shared_preferences: ^2.3.2
+  jwt_decoder: ^2.0.1
+  dart_jsonwebtoken: 2.14.0
+  
 
 dev_dependencies:
   flutter_test:

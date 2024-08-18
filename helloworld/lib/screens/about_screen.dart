@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:helloworld/screens/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+// import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'user_auth.dart'; // Import your UserAuth class
 
 class AboutScreen extends StatefulWidget {
-  final int userId; // User ID to fetch data
+  final int userId; // Add this line
 
-  const AboutScreen({Key? key, required this.userId}) : super(key: key);
+  AboutScreen({required this.userId}); // Update constructor to accept userId
 
   @override
   _AboutScreenState createState() => _AboutScreenState();
@@ -34,8 +38,9 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> fetchUserProfile() async {
     try {
-      final response = await http.get(
-          Uri.parse('http://10.0.2.2:8000/user-register/${widget.userId}'));
+      final userId = widget.userId; // Use widget.userId
+      final response = await http
+          .get(Uri.parse('http://10.0.2.2:8000/user-register/$userId/'));
       if (response.statusCode == 200) {
         final Map<String, dynamic> userJson = json.decode(response.body);
         setState(() {
@@ -49,7 +54,6 @@ class _AboutScreenState extends State<AboutScreen> {
           // Set profile image
           final profileImageUrl = userJson['profile_image'];
           if (profileImageUrl != null) {
-            // Assuming the URL points to an accessible image
             _profileImage = null; // Reset profile image for now
           }
           _isLoading = false;
@@ -72,8 +76,9 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> fetchUserCars() async {
     try {
-      final response = await http
-          .get(Uri.parse('http://10.0.2.2:8000/users/${widget.userId}/cars/'));
+      final userId = widget.userId; // Use widget.userId
+      final response =
+          await http.get(Uri.parse('http://10.0.2.2:8000/users/$userId/cars/'));
       if (response.statusCode == 200) {
         final List<dynamic> carsJson = json.decode(response.body);
         setState(() {
@@ -100,8 +105,8 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _saveChanges() async {
     try {
-      final uri =
-          Uri.parse('http://10.0.2.2:8000/user-register/${widget.userId}/');
+      final userId = widget.userId; // Use widget.userId
+      final uri = Uri.parse('http://10.0.2.2:8000/user-register/$userId/');
       final request = http.MultipartRequest('PUT', uri);
 
       if (_profileImage != null) {
@@ -119,17 +124,17 @@ class _AboutScreenState extends State<AboutScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Changes saved successfully')
-          ,backgroundColor: Colors.green),
+          SnackBar(
+              content: Text('Changes saved successfully'),
+              backgroundColor: Colors.green),
         );
       } else {
         print('Failed to save changes: ${response.statusCode}');
         print('Response: $responseString');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save changes'),
-          backgroundColor: Colors.red,
-          
-          ),
+          SnackBar(
+              content: Text('Failed to save changes'),
+              backgroundColor: Colors.red),
         );
       }
     } catch (e) {
@@ -202,15 +207,15 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _postCar(String model, String vin) async {
     try {
-      final uri =
-          Uri.parse('http://10.0.2.2:8000/users/${widget.userId}/cars/');
+      final userId = widget.userId; // Use widget.userId
+      final uri = Uri.parse('http://10.0.2.2:8000/users/$userId/cars/');
       final response = await http.post(
         uri,
         headers: {
           'Content-Type': 'application/json', // Set content type to JSON
         },
         body: json.encode({
-          'user_id': widget.userId,
+          'user_id': userId,
           'model': model,
           'vin': vin,
         }),
@@ -234,14 +239,32 @@ class _AboutScreenState extends State<AboutScreen> {
       );
     }
   }
+  
+  Future<void> logout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+    await prefs.remove('access_token');
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Successfully logged out'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoginScreen(), // Navigate to LoginScreen
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("User Profile"),
-          backgroundColor: Colors.blueAccent,
+          title: Text('User Profile'),
         ),
         body: Center(child: CircularProgressIndicator()),
       );
@@ -250,131 +273,134 @@ class _AboutScreenState extends State<AboutScreen> {
     if (_hasError) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text("User Profile"),
-          backgroundColor: Colors.blueAccent,
+          title: Text('User Profile'),
         ),
-        body: Center(child: Text('Failed to load user profile')),
+        body: Center(child: Text('Error loading user profile')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("User Profile"),
-        backgroundColor: Colors.blueAccent,
+        title: Text('User Profile'),
+         actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await logout(context);
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile Image Uploader
-              Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: _profileImage != null
-                          ? FileImage(_profileImage!)
-                          : _userProfile?['profile_image'] != null
-                              ? NetworkImage(_userProfile!['profile_image'])
-                              : null,
-                      child: _profileImage == null &&
-                              _userProfile?['profile_image'] == null
-                          ? const Icon(Icons.person, size: 60)
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: _pickImage,
-                      ),
-                    ),
-                  ],
-                ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            GestureDetector(
+              onTap: _pickImage,
+              child: CircleAvatar(
+                radius: 50,
+                
+                backgroundImage: _profileImage != null
+                    ? FileImage(_profileImage!)
+                    : _userProfile?['profile_image'] != null
+                        ? NetworkImage(_userProfile!['profile_image'])
+                        : AssetImage('assets/default_profile.png')
+                            as ImageProvider,
               ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Username'),
+            ),
+            SizedBox(height: 20),
+            TextFormField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: 'Username',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 6),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
+            ),
+            SizedBox(height: 10),
+            TextFormField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 6),
-              TextFormField(
-                controller: _phoneNumberController,
-                decoration: InputDecoration(labelText: 'Phone Number'),
+            ),
+            SizedBox(height: 10),
+            TextFormField(
+              controller: _phoneNumberController,
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 6),
-              TextFormField(
-                controller: _firstNameController,
-                decoration: InputDecoration(labelText: 'First Name'),
+            ),
+            SizedBox(height: 10),
+            TextFormField(
+              controller: _firstNameController,
+              decoration: InputDecoration(
+                labelText: 'First Name',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 6),
-              TextFormField(
-                controller: _lastNameController,
-                decoration: InputDecoration(labelText: 'Last Name'),
+            ),
+            SizedBox(height: 10),
+            TextFormField(
+              controller: _lastNameController,
+              decoration: InputDecoration(
+                labelText: 'Last Name',
+                border: OutlineInputBorder(),
               ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _saveChanges,
-                child: const Text('Save Changes'),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.blueAccent,
-                ),
-              ),
-              SizedBox(height: 10),
-              Center(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.blueAccent, // Border color
-                      width: 2.0, // Border width
-                      style: BorderStyle
-                          .solid, // Solid border (use dashed if needed)
-                    ),
-                    borderRadius: BorderRadius.circular(8.0), // Rounded corners
-                  ),
-                  child: ElevatedButton(
-                    onPressed: _showAddCarDialog,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.blueAccent,
-                      backgroundColor: Colors.white, // Text color
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 20.0, vertical: 10.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.blueAccent), // Plus icon
-                        SizedBox(width: 8.0), // Space between icon and text
-                        Text('Add your car here'), // Button text
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 10),
-              // Display list of cars
-              ..._userCars.map((car) => ListTile(
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _saveChanges,
+              child: Text('Save Changes'),
+            ),
+            SizedBox(height: 20),
+            Text('Your Cars:'),
+            Container(
+              height: 200, // Adjust height as needed
+              child: ListView.builder(
+                itemCount: _userCars.length,
+                itemBuilder: (context, index) {
+                  final car = _userCars[index];
+                  return ListTile(
                     title: Text(car['model']),
                     subtitle: Text('VIN: ${car['vin']}'),
-                  )),
-            ],
-          ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
+      ),
+
+      
+      floatingActionButton: Stack(
+        children: [
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: _showAddCarDialog,
+              child: Icon(Icons.add),
+            ),
+          ),
+          Positioned(
+            bottom: 16,
+            right: 90, // Adjust to position the text next to the button
+            child: Container(
+              padding: EdgeInsets.all(8.0),
+              color: Colors.white,
+              child: Text(
+                'Add your car',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

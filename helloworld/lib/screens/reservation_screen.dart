@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:helloworld/screens/login_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'about_screen.dart';
 
 class ReservationScreen extends StatefulWidget {
@@ -12,29 +13,43 @@ class ReservationScreen extends StatefulWidget {
 class _ReservationScreenState extends State<ReservationScreen> {
   final _formKey = GlobalKey<FormState>();
   DateTime? _selectedStartTime, _selectedEndTime;
-  List<Map<String, dynamic>> carList = []; // List to hold car info and IDs
+  List<Map<String, dynamic>> carList = [];
   String? _selectedSlot;
   Map<String, dynamic>? _selectedCar;
+  int? _userId;
 
   @override
   void initState() {
     super.initState();
-    fetchCars();
+    _loadUserId();
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userId = prefs.getInt('user_id');
+    });
+    if (_userId != null) {
+      fetchCars();
+    }
   }
 
   Future<void> fetchCars() async {
+    if (_userId == null) return;
+
     try {
-      final response = await http.get(Uri.parse(
-          'http://10.0.2.2:8000/users/2/cars/')); // Replace with the correct user_id
+      final response = await http
+          .get(Uri.parse('http://10.0.2.2:8000/users/$_userId/cars/'));
       if (response.statusCode == 200) {
         final List<dynamic> carsJson = json.decode(response.body);
 
         setState(() {
           carList = carsJson.map((carData) {
             return {
-              'id': carData['id'], // Assuming 'id' is the car's ID
-              'info':
-                  '${carData['model']} - ${carData['vin']}', // Concatenating model and vin
+              'id': carData['id'],
+              'model': carData['model'],
+              'vin': carData['vin'],
+              'info': '${carData['model']} - ${carData['vin']}',
             };
           }).toList();
         });
@@ -47,6 +62,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
   }
 
   Future<void> makeReservation() async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('User not logged in')));
+      return;
+    }
+
     if (_selectedCar == null ||
         _selectedSlot == null ||
         _selectedStartTime == null ||
@@ -71,30 +92,34 @@ class _ReservationScreenState extends State<ReservationScreen> {
       );
 
       if (response.statusCode == 201) {
-        // Show a SnackBar with a green background to indicate success
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Reservation successful'),
-            backgroundColor: Colors.green, // Set the background color to green
+            backgroundColor: Colors.green,
           ),
         );
 
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => BookingPage(slotName: _selectedSlot),
+            builder: (context) => BookingPage(
+              slotName: _selectedSlot ?? 'Unknown Slot',
+              carModel: _selectedCar?['model'] ?? 'Unknown Model',
+              carVin: _selectedCar?['vin'] ?? 'Unknown VIN',
+              startTime: _selectedStartTime!,
+              endTime: _selectedEndTime!,
+            ),
           ),
         );
       } else {
         print('Failed to make reservation');
         print(response.body);
 
-        // Show a SnackBar with a red background to indicate failure
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
                 'Failed to make reservation. A reservation with this car slot already exists.'),
-            backgroundColor: Colors.red, // Set the background color to red
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -114,14 +139,17 @@ class _ReservationScreenState extends State<ReservationScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-              icon: Icon(Icons.person),
-              onPressed: () {
+            icon: Icon(Icons.person),
+            onPressed: () {
+              if (_userId != null) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => AboutScreen(userId: 2)),
+                      builder: (context) => AboutScreen(userId: _userId!)),
                 );
-              }),
+              }
+            },
+          ),
         ],
       ),
       body: Center(
@@ -134,36 +162,31 @@ class _ReservationScreenState extends State<ReservationScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Car Selection Dropdown
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: DropdownButtonFormField<Map<String, dynamic>>(
-                    decoration: InputDecoration(
-                      labelText: 'Select Car',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 16.0, horizontal: 12.0),
-                    ),
-                    hint: Text('Select a car or please add it at you profile'),
-                    value: _selectedCar,
-                    items: carList.map((Map<String, dynamic> car) {
-                      return DropdownMenuItem<Map<String, dynamic>>(
-                        value: car,
-                        child: Text(car['info']),
-                      );
-                    }).toList(),
-                    onChanged: (Map<String, dynamic>? newValue) {
-                      setState(() {
-                        _selectedCar = newValue;
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Please select a car' : null,
+                DropdownButtonFormField<Map<String, dynamic>>(
+                  decoration: InputDecoration(
+                    labelText: 'Select Car',
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
                   ),
+                  hint: Text('Select a car or please add it at your profile'),
+                  value: _selectedCar,
+                  items: carList.map((Map<String, dynamic> car) {
+                    return DropdownMenuItem<Map<String, dynamic>>(
+                      value: car,
+                      child: Text(car['info']),
+                    );
+                  }).toList(),
+                  onChanged: (Map<String, dynamic>? newValue) {
+                    setState(() {
+                      _selectedCar = newValue;
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a car' : null,
                 ),
-                // Custom Slot Input
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
                   child: TextFormField(
                     decoration: InputDecoration(
                       labelText: 'Enter Slot',
@@ -181,34 +204,29 @@ class _ReservationScreenState extends State<ReservationScreen> {
                         : null,
                   ),
                 ),
-                // Start Time Picker
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: TextFormField(
-                    decoration: InputDecoration(
-                      labelText: 'Start Time',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 16.0, horizontal: 12.0),
-                    ),
-                    readOnly: true,
-                    onTap: () async {
-                      DateTime? picked = await showDateTimePicker(context);
-                      if (picked != null)
-                        setState(() {
-                          _selectedStartTime = picked;
-                        });
-                    },
-                    controller: TextEditingController(
-                      text: _selectedStartTime != null
-                          ? _selectedStartTime!.toLocal().toString()
-                          : '',
-                    ),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Start Time',
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                  ),
+                  readOnly: true,
+                  onTap: () async {
+                    DateTime? picked = await showDateTimePicker(context);
+                    if (picked != null)
+                      setState(() {
+                        _selectedStartTime = picked;
+                      });
+                  },
+                  controller: TextEditingController(
+                    text: _selectedStartTime != null
+                        ? _selectedStartTime!.toLocal().toString()
+                        : '',
                   ),
                 ),
-                // End Time Picker
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
                   child: TextFormField(
                     decoration: InputDecoration(
                       labelText: 'End Time',
@@ -231,7 +249,6 @@ class _ReservationScreenState extends State<ReservationScreen> {
                     ),
                   ),
                 ),
-                // Reserve Button
                 Center(
                   child: SizedBox(
                     width: 200,
@@ -244,9 +261,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       ),
                       child: Text(
                         'Reserve Slot',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                   ),
@@ -268,42 +283,76 @@ class _ReservationScreenState extends State<ReservationScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
-    if (pickedDate != null) {
-      TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: initialTime,
-      );
-      if (pickedTime != null) {
-        return DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          pickedTime.hour,
-          pickedTime.minute,
-        );
-      }
-    }
-    return null;
+    if (pickedDate == null) return null;
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+    if (pickedTime == null) return null;
+    return DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+  }
+
+  Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
   }
 }
 
 class BookingPage extends StatelessWidget {
-  final String? slotName;
+  final String slotName;
+  final String carModel;
+  final String carVin;
+  final DateTime startTime;
+  final DateTime endTime;
 
-  BookingPage({this.slotName});
+  BookingPage({
+    required this.slotName,
+    required this.carModel,
+    required this.carVin,
+    required this.startTime,
+    required this.endTime,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Booking Page'),
+        title: Text('Booking Confirmation'),
         backgroundColor: Colors.blue.shade600,
         centerTitle: true,
       ),
-      body: Center(
-        child: Text(
-          'Slot $slotName reserved successfully!',
-          style: TextStyle(fontSize: 24),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Slot Name: $slotName'),
+            SizedBox(height: 8.0),
+            Text('Car Model: $carModel'),
+            SizedBox(height: 8.0),
+            Text('Car VIN: $carVin'),
+            SizedBox(height: 8.0),
+            Text('Start Time: ${startTime.toLocal()}'),
+            SizedBox(height: 8.0),
+            Text('End Time: ${endTime.toLocal()}'),
+            SizedBox(height: 16.0),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('OK'),
+            ),
+          ],
         ),
       ),
     );

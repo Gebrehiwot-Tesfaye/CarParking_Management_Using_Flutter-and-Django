@@ -3,6 +3,7 @@ import 'package:helloworld/screens/register_screen.dart';
 import 'package:helloworld/screens/booking_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart'; // **Added for local storage**
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -33,11 +34,24 @@ class _LoginScreenState extends State<LoginScreen> {
           }),
         );
 
-           if (response.statusCode == 200) {
+        if (response.statusCode == 200) {
+          final responseData = jsonDecode(response.body);
+          final accessToken = responseData['access_token'];
+          final userId = responseData['id'];
+
+          // **Save access token and userId to local storage**
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('access_token', accessToken);
+          await prefs.setInt('user_id', userId);
+
+          print('Access Token: $accessToken');
+          print('User ID: $userId');
+
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Successfully logged in!'),
             backgroundColor: Colors.green,
           ));
+
           // Navigate to the ReservationScreen
           Navigator.pushReplacement(
             context,
@@ -45,14 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         } else if (response.statusCode == 400) {
           final responseData = jsonDecode(response.body);
-          final errorMessage =
-              responseData['error'] ?? 'Login failed! please wait until approved by administrator.';
+          final errorMessage = responseData['error'] ??
+              'Login failed! please wait until approved by administrator.';
           _showPendingApprovalDialog(errorMessage); // Show the popup on failure
         } else {
-          _showPendingApprovalDialog('Login failed!please wait until approved by administrator.');
+          _showPendingApprovalDialog(
+              'Login failed! please wait until approved by administrator.');
         }
       } catch (error) {
-        _showPendingApprovalDialog('An error occurred. please wait until approved by administrator..');
+        _showPendingApprovalDialog(
+            'An error occurred. please wait until approved by administrator..');
       } finally {
         setState(() {
           _isLoading = false;
@@ -119,7 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment
                         .center, // Center the content vertically
                     children: [
-                      // Display the custom image
                       Image.asset(
                         'assets/images/carlogin.png',
                         width: 200, // Set the width of the image
@@ -127,10 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         fit: BoxFit
                             .contain, // Ensure the image fits well within its bounds
                       ),
-                      // Remove SizedBox if you don't want any space between image and text
-                      // If necessary, you can set it to a very small value or remove it entirely
-                      // SizedBox(height: 0), // Optional: Adjust spacing if needed
-                      // Add the welcome text below the image
                       Text(
                         'Welcome back to ASHWA Car Parking',
                         style: TextStyle(
